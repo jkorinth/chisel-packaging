@@ -33,10 +33,10 @@ def run_vivado(script):
 	output = p.communicate(input = script)[0]
 	print output.decode() 
 
-def parse_args:
+def parse_args():
 	parser = argparse.ArgumentParser(description = 'Package a hardware module specified by JSON as IP-XACT.')
 	parser.add_argument('json', help = 'path to JSON file')
 	return parser.parse_args()
 
-args = parse_args
+args = parse_args()
 run_vivado(make_vivado_script(args.json))
