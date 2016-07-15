@@ -1,3 +1,4 @@
+package chisel.packaging
 import scala.io.Source
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
