@@ -22,7 +22,8 @@ case class CoreDefinition(name: String, vendor: String, library: String, version
  **/
 object CoreDefinition {
   /** Alternative constructor: supplies root dir as ip/<name>. **/
-  def apply(name: String, vendor: String, library: String, version: String) = CoreDefinition(
+  def apply(name: String, vendor: String, library: String, version: String): CoreDefinition =
+    CoreDefinition(
       name,
       vendor,
       library,
