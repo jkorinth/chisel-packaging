@@ -21,6 +21,15 @@ case class CoreDefinition(name: String, vendor: String, library: String, version
  * Contains methods for reading a core definition from Json.
  **/
 object CoreDefinition {
+  /** Alternative constructor: supplies root dir as ip/<name>. **/
+  def apply(name: String, vendor: String, library: String, version: String) = CoreDefinition(
+      name,
+      vendor,
+      library,
+      version,
+      java.nio.file.Paths.get(".").toAbsolutePath.resolveSibling("ip").resolve(name).toString
+    )
+
   implicit val coreDefinitionWrites : Writes[CoreDefinition] = (
       (JsPath \ "name").write[String] ~
       (JsPath \ "vendor").write[String] ~
@@ -37,6 +46,10 @@ object CoreDefinition {
       (JsPath \ "root").read[String]
     )(CoreDefinition.apply _)
 
+  /**
+   * Read CoreDefinition from file containing Json format.
+   * @param filename Name (and path) of file.
+   **/
   def read(filename: String) : Option[CoreDefinition] = try {
     val contents = Source.fromFile(filename).getLines.mkString("\n")
     val json = Json.parse(contents)
