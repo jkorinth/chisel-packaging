@@ -21,15 +21,9 @@ case class CoreDefinition(name: String, vendor: String, library: String, version
  * Contains methods for reading a core definition from Json.
  **/
 object CoreDefinition {
-  /** Alternative constructor: supplies root dir as ip/<name>. **/
-  def apply(name: String, vendor: String, library: String, version: String): CoreDefinition =
-    CoreDefinition(
-      name,
-      vendor,
-      library,
-      version,
+  /** Provide automatic IP directory for given name. **/
+  def root(name: String): String =
       java.nio.file.Paths.get(".").toAbsolutePath.resolveSibling("ip").resolve(name).toString
-    )
 
   implicit val coreDefinitionWrites : Writes[CoreDefinition] = (
       (JsPath \ "name").write[String] ~
