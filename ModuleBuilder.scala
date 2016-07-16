@@ -15,7 +15,10 @@ abstract class ModuleBuilder(packagingDir: String = "packaging") {
   val modules: List[(() => Module, CoreDefinition)]
 
   def main(args: Array[String]) {
-    modules foreach { m =>
+    assert ((modules map (_._2.name.toLowerCase)).toSet.size == modules.length, "module names must be unique")
+    val fm = modules filter (m => args.length == 0 || args.map(_.toLowerCase).contains(m._2.name.toLowerCase))
+    assert (fm.length > 0, "no matching cores found for: " + args.mkString(", "))
+    fm foreach { m =>
       chiselMain(chiselArgs ++ Array("--targetDir", m._2.root), m._1)
       val json = "%s/%s.json".format(m._2.root, m._2.name)
       m._2.write(json)
