@@ -2,11 +2,13 @@ package chisel.packaging
 import scala.io.Source
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
+import Chisel.Module
 
 /**
  * Basic definition of a core for IP-XACT packaging.
  **/
-case class CoreDefinition(name: String, vendor: String, library: String, version: String, root: String) {
+class CoreDefinition(val name: String, val vendor: String, val library: String, val version: String,
+                     val root: String, val postBuildActions: Seq[Module => Unit] = Seq()) {
   import CoreDefinition._
   def write(filename: String) : Boolean = try {
     val fw = new java.io.FileWriter(filename)
@@ -21,6 +23,16 @@ case class CoreDefinition(name: String, vendor: String, library: String, version
  * Contains methods for reading a core definition from Json.
  **/
 object CoreDefinition {
+  def apply(name: String, vendor: String, library: String, version: String, root: String): CoreDefinition =
+    new CoreDefinition(name, vendor, library, version, root)
+
+  def withActions(name: String, vendor: String, library: String, version: String, root: String,
+            postBuildActions: Seq[Module => Unit]): CoreDefinition =
+    new CoreDefinition(name, vendor, library, version, root, postBuildActions)
+
+  def unapply(cd: CoreDefinition): Option[Tuple5[String, String, String, String, String]] =
+    Some((cd.name, cd.vendor, cd.library, cd.version, cd.root))
+
   /** Provide automatic IP directory for given name. **/
   def root(name: String): String =
       java.nio.file.Paths.get(".").toAbsolutePath.resolveSibling("ip").resolve(name).toString

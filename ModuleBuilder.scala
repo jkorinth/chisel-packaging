@@ -20,6 +20,7 @@ abstract class ModuleBuilder(packagingDir: String = "packaging") {
     assert (fm.length > 0, "no matching cores found for: " + args.mkString(", "))
     fm foreach { m =>
       chiselMain(chiselArgs ++ Array("--targetDir", m._2.root), m._1)
+      m._2.postBuildActions map (fn => fn.apply(m._1()))
       val json = "%s/%s.json".format(m._2.root, m._2.name)
       m._2.write(json)
       "%s/package.py %s".format(packagingDir, json) !
