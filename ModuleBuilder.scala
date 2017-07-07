@@ -1,6 +1,6 @@
 package chisel.packaging
-import Chisel._
-import scala.sys.process._
+import  chisel3._
+import  scala.sys.process._
 
 /**
  * Abstract IP-XACT builder class:
@@ -11,7 +11,7 @@ import scala.sys.process._
  *                     (default: ./packaging)
  **/
 abstract class ModuleBuilder(packagingDir: String = "packaging") {
-  val chiselArgs = Array("--backend", "v", "--compile")
+  val chiselArgs = Array[String]()
   val modules: List[(() => Module, CoreDefinition)]
 
   def main(args: Array[String]) {
@@ -19,7 +19,7 @@ abstract class ModuleBuilder(packagingDir: String = "packaging") {
     val fm = modules filter (m => args.length == 0 || args.map(_.toLowerCase).contains(m._2.name.toLowerCase))
     assert (fm.length > 0, "no matching cores found for: " + args.mkString(", "))
     fm foreach { m =>
-      chiselMain(chiselArgs ++ Array("--targetDir", m._2.root), m._1)
+      Driver.execute(chiselArgs ++ Array("--target-dir", m._2.root), m._1)
       m._2.postBuildActions map (fn => fn.apply(m._1()))
       val json = "%s/%s.json".format(m._2.root, m._2.name)
       m._2.write(json)

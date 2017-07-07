@@ -1,8 +1,8 @@
 package chisel.packaging
-import scala.io.Source
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
-import Chisel.Module
+import  scala.io.Source
+import  play.api.libs.json._
+import  play.api.libs.functional.syntax._
+import  chisel3.Module
 
 /**
  * Basic definition of a core for IP-XACT packaging.
