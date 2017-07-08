@@ -16,12 +16,12 @@ Basic Usage
 -----------
 Class `ModuleBuilder` provides an abstract base class for an executable object with a `main`
 method. You'll only need to provide a list of Chisel cores you'd like to wrap into IP-XACT.
-A full example can be found in `examples`; test it as follows:
+A full example can be found in `example`; test it as follows:
 
   1. Source the Vivado settings scripts, make sure `vivado` is in the `PATH`.
   2. In the `chisel-packaging` base dir, do:  
         
-        cp examples/* .
+        cp example/* .
         
   3. Execute via:
         
@@ -60,7 +60,7 @@ The easiest way to setup `chisel-packaging` for your Chisel project with `sbt` i
 
   4. Implement `chisel.packaging.ModuleBuilder` in your own code; if you've chosen
      a different directory than `packaging` for the subtree, you can pass it to the
-     baseclass constructor -- see [examples/ModuleBuilder.scala](examples/ModuleBuilder.scala).
+     baseclass constructor -- see [example/ModuleBuilderTest.scala][3]
 
   5. Build the IP-XACT cores via `sbt run`.
 
@@ -75,3 +75,4 @@ Gotchas
 
 [1]: https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree
 [2]: https://www.xilinx.com/products/design-tools/vivado.html
+[3]: example/ModuleBuilderTest.scala
