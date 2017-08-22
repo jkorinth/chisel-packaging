@@ -2,6 +2,13 @@ package chisel.packaging
 import  chisel3._
 import  scala.sys.process._
 
+/** Module definition.
+ *  @param config Optional, arbitrary configuration object, passed to post build actions.
+ *  @param constr Module constructor function.
+ *  @param core   Core definition.
+ **/
+final case class ModuleDef(config: Option[Any], constr: () => Module, core: CoreDefinition)
+
 /**
  * Abstract IP-XACT builder class:
  * Objects can inherit from ModuleBuilder to automate the building
@@ -12,17 +19,18 @@ import  scala.sys.process._
  **/
 abstract class ModuleBuilder(packagingDir: String = "packaging") {
   val chiselArgs = Array[String]()
-  val modules: List[(() => Module, CoreDefinition)]
+  /** List of modules to build. */
+  val modules: Seq[ModuleDef]
 
   def main(args: Array[String]) {
-    assert ((modules map (_._2.name.toLowerCase)).toSet.size == modules.length, "module names must be unique")
-    val fm = modules filter (m => args.length == 0 || args.map(_.toLowerCase).contains(m._2.name.toLowerCase))
+    assert ((modules map (_.core.name.toLowerCase)).toSet.size == modules.length, "module names must be unique")
+    val fm = modules filter (m => args.length == 0 || args.map(_.toLowerCase).contains(m.core.name.toLowerCase))
     assert (fm.length > 0, "no matching cores found for: " + args.mkString(", "))
     fm foreach { m =>
-      Driver.execute(chiselArgs ++ Array("--target-dir", m._2.root), m._1)
-      m._2.postBuildActions map (fn => fn.apply(m._1()))
-      val json = "%s/%s.json".format(m._2.root, m._2.name)
-      m._2.write(json)
+      Driver.execute(chiselArgs ++ Array("--target-dir", m.core.root), m.constr)
+      m.core.postBuildActions map (fn => fn.apply(m.config))
+      val json = "%s/%s.json".format(m.core.root, m.core.name)
+      m.core.write(json)
       "%s/package.py %s".format(packagingDir, json) !
     }
   }
