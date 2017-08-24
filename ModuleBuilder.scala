@@ -31,7 +31,7 @@ abstract class ModuleBuilder(packagingDir: String = "packaging") {
       m.core.postBuildActions map (fn => fn.apply(m.config))
       val json = "%s/%s.json".format(m.core.root, m.core.name)
       m.core.write(json)
-      "%s/package.py %s".format(packagingDir, json) !
+      "%s/package.py %s".format(packagingDir, json).!
     }
   }
 }

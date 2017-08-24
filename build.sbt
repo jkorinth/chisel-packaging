@@ -6,8 +6,6 @@ version := "0.3-SNAPSHOT"
 
 scalaVersion := "2.11.11"
 
-crossScalaVersions := Seq("2.10.3", "2.10.4", "2.11.0")
-
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   Resolver.sonatypeRepo("releases")
@@ -24,3 +22,4 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-json" % "2.6.3"
 )
 
+scalacOptions += "-feature"
