@@ -4,11 +4,15 @@ import  play.api.libs.json._
 import  play.api.libs.functional.syntax._
 import  chisel3.Module
 
+/** Abstraction for known bus interfaces / pin groups. */
+final case class Interface(name: String, kind: String)
+
 /**
  * Basic definition of a core for IP-XACT packaging.
  **/
 class CoreDefinition(val name: String, val vendor: String, val library: String, val version: String,
-                     val root: String, val postBuildActions: Seq[Module => Unit] = Seq()) {
+                     val root: String, val postBuildActions: Seq[Option[Any] => Unit] = Seq(),
+                     val interfaces: Seq[Interface] = Seq()) {
   import CoreDefinition._
   def write(filename: String) : Boolean = try {
     val fw = new java.io.FileWriter(filename)
@@ -23,35 +27,43 @@ class CoreDefinition(val name: String, val vendor: String, val library: String, 
  * Contains methods for reading a core definition from Json.
  **/
 object CoreDefinition {
-  def apply(name: String, vendor: String, library: String, version: String, root: String): CoreDefinition =
-    new CoreDefinition(name, vendor, library, version, root)
+  def apply(name: String, vendor: String, library: String, version: String, root: String,
+            interfaces: Seq[Interface] = Seq()): CoreDefinition =
+    new CoreDefinition(name, vendor, library, version, root, interfaces = interfaces)
 
   def withActions(name: String, vendor: String, library: String, version: String, root: String,
-            postBuildActions: Seq[Module => Unit]): CoreDefinition =
+                  postBuildActions: Seq[Option[Any] => Unit], interfaces: Seq[Interface] = Seq()): CoreDefinition =
     new CoreDefinition(name, vendor, library, version, root, postBuildActions)
 
-  def unapply(cd: CoreDefinition): Option[Tuple5[String, String, String, String, String]] =
-    Some((cd.name, cd.vendor, cd.library, cd.version, cd.root))
+  def unapply(cd: CoreDefinition): Option[Tuple6[String, String, String, String, String, Seq[Interface]]] =
+    Some((cd.name, cd.vendor, cd.library, cd.version, cd.root, cd.interfaces))
 
   /** Provide automatic IP directory for given name. **/
   def root(name: String): String =
       java.nio.file.Paths.get(".").toAbsolutePath.resolveSibling("ip").resolve(name).toString
 
-  implicit val coreDefinitionWrites : Writes[CoreDefinition] = (
+  implicit val interfaceFormat: Format[Interface] = (
+    (JsPath \ "name").format[String] ~
+    (JsPath \ "kind").format[String]
+  ) (Interface.apply _, unlift(Interface.unapply _))
+
+  implicit val coreDefinitionWrites: Writes[CoreDefinition] = (
       (JsPath \ "name").write[String] ~
       (JsPath \ "vendor").write[String] ~
       (JsPath \ "library").write[String] ~
       (JsPath \ "version").write[String] ~
-      (JsPath \ "root").write[String]
-    )(unlift(CoreDefinition.unapply))
+      (JsPath \ "root").write[String] ~
+      (JsPath \ "interfaces").write[Seq[Interface]]
+    )(unlift(CoreDefinition.unapply _))
 
-  implicit val coreDefinitionReads : Reads[CoreDefinition] = (
+  implicit val coreDefinitionReads: Reads[CoreDefinition] = (
       (JsPath \ "name").read[String] ~
       (JsPath \ "vendor").read[String] ~
       (JsPath \ "library").read[String] ~
       (JsPath \ "version").read[String] ~
-      (JsPath \ "root").read[String]
-    )(CoreDefinition.apply _)
+      (JsPath \ "root").read[String] ~
+      (JsPath \ "interfaces").readNullable[Seq[Interface]].map(_ getOrElse Seq[Interface]())
+    )(apply _)
 
   /**
    * Read CoreDefinition from file containing Json format.

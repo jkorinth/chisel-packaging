@@ -2,11 +2,9 @@ name := "chisel-packaging"
 
 organization := "esa.cs.tu-darmstadt.de"
 
-version := "0.2-SNAPSHOT"
+version := "0.3-SNAPSHOT"
 
-scalaVersion := "2.11.0"
-
-crossScalaVersions := Seq("2.10.3", "2.10.4", "2.11.0")
+scalaVersion := "2.11.11"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -21,6 +19,7 @@ libraryDependencies ++= (Seq("chisel3","chisel-iotesters").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
 
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-json" % "2.4.8"
+  "com.typesafe.play" %% "play-json" % "2.6.3"
 )
 
+scalacOptions += "-feature"

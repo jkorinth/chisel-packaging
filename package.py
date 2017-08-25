@@ -3,6 +3,7 @@
 import json
 import argparse
 from subprocess import Popen, STDOUT, PIPE
+import axi4
 
 script = '''
 create_project -force "{0}" /tmp
@@ -19,6 +20,84 @@ ipx::save_core [ipx::current_core]
 close_project -delete
 '''
 
+__interface_script = '''
+set name    "{0}"
+set vendor  "{1}"
+set library "{2}"
+set version "{3}"
+set root    "{4}"
+set mainmod "{5}"
+
+cd $root
+
+create_project -in_memory $root
+update_ip_catalog
+ipx::create_core $vendor $library $name $version
+
+set core [ipx::current_core]
+
+set_property supported_families {{virtex7 Production qvirtex7 Production kintex7 Production kintex7l Production qkintex7 Production qkintex7l Production artix7 Production artix7l Production aartix7 Production qartix7 Production zynq Production qzynq Production azynq Production}} $core
+
+#set_property core_revision 1 $core
+set_property display_name $name $core
+set_property description $name $core
+set_property taxonomy $library $core
+
+set fg [ipx::add_file_group -type synthesis "sources" $core]
+set_property -dict [list model_name $name language Verilog] $fg
+ipx::import_top_level_hdl -top_level_hdl_file $mainmod -verbose $core
+
+set clk [ipx::add_bus_interface clock $core]
+set_property type_name std_logic [ipx::add_port "clock" $core]
+set_property -dict [list \
+  abstraction_type_vlnv {{xilinx.com:signal:clock_rtl:1.0}} \
+  bus_type_vlnv {{xilinx.com:signal:clock:1.0}}] $clk
+set_property physical_name "clock" [ipx::add_port_map "CLK" $clk]
+
+set rst [ipx::add_bus_interface reset $core]
+set_property type_name std_logic [ipx::add_port "reset" $core]
+set_property -dict [list \
+  abstraction_type_vlnv {{xilinx.com:signal:reset_rtl:1.0}} \
+  bus_type_vlnv {{xilinx.com:signal:reset:1.0}}] $rst
+set_property value ACTIVE_HIGH [ipx::add_bus_parameter POLARITY $rst]
+set_property physical_name "reset" [ipx::add_port_map "RST" $rst]
+
+{6}
+
+ipx::create_default_gui_files $core
+ipx::update_checksums $core
+ipx::save_core $core
+ipx::archive_core "$root/$name.zip" $core
+#close_project -delete
+'''
+
+__axi4Tcl = '''
+set if [ipx::add_bus_interface "{0}" $core]
+set_property -dict [list \
+  abstraction_type_vlnv {{xilinx.com:interface:axi4mm_rtl:1.0}} \
+  bus_type_vlnv {{xilinx.com:interface:axi4mm:1.0}} \
+  interface_mode {1}] $if
+ipx::associate_bus_interfaces -busif "{0}" -clock clock -reset reset $core
+foreach {{bport port}} {2} {{
+  puts "$bport $port"
+  set_property physical_name "$port" [ipx::add_port_map $bport $if]
+}}
+'''
+
+def map_interface(name, kind):
+	if kind == 'axi4master':
+		script = __axi4Tcl.format(name, 'master', make_tcl_port_list(axi4.get_port_dict(name)))
+		return script
+	elif kind == 'axi4slave':
+		script = __axi4Tcl.format(name, 'slave', make_tcl_port_list(axi4.get_port_dict(name)))
+		return script
+	else:
+		print 'unknown interface: ' + kind
+		return ''
+
+def make_tcl_port_list(d, f=lambda x: x):
+        return "[list " + ' '.join([k + ' ' + f(d[k]) for k in sorted(d.keys())]) + "]"
+
 def read_json(jsonfile):
 	with open(jsonfile, 'r') as jf:
 		contents = jf.read()
@@ -26,7 +105,13 @@ def read_json(jsonfile):
 
 def make_vivado_script(jsonfile):
 	cd = read_json(jsonfile)
-	return script.format(cd['name'], cd['vendor'], cd['library'], cd['version'], cd['root'])
+	if ('interfaces' not in cd) or (len(cd['interfaces']) is 0):
+		#print 'found no interfaces, or empty interface list, using auto-inference'
+		return script.format(cd['name'], cd['vendor'], cd['library'], cd['version'], cd['root'])
+	else:
+		#print 'found interfaces: ', cd['interfaces']
+		ifs = '\n'.join([map_interface(i['name'], i['kind']) for i in cd['interfaces']])
+		return __interface_script.format(cd['name'], cd['vendor'], cd['library'], cd['version'], cd['root'], cd['root'] + '/' + cd['name'] + '.v', ifs)
 
 def run_vivado(script):
 	p = Popen(['vivado', '-mode', 'tcl', '-nolog', '-nojournal'], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
@@ -40,3 +125,4 @@ def parse_args():
 
 args = parse_args()
 run_vivado(make_vivado_script(args.json))
+#print make_vivado_script(args.json)
