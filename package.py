@@ -4,6 +4,7 @@ import json
 import argparse
 from subprocess import Popen, STDOUT, PIPE
 import axi4
+import os
 
 script = '''
 create_project -force "{0}" /tmp
@@ -46,6 +47,7 @@ set_property taxonomy $library $core
 set fg [ipx::add_file_group -type synthesis "sources" $core]
 set_property -dict [list model_name $name language Verilog] $fg
 ipx::import_top_level_hdl -top_level_hdl_file $mainmod -verbose $core
+ipx::add_file $mainmod $fg
 
 set clk [ipx::add_bus_interface clock $core]
 set_property type_name std_logic [ipx::add_port "clock" $core]
@@ -74,8 +76,8 @@ ipx::archive_core "$root/$name.zip" $core
 __axi4Tcl = '''
 set if [ipx::add_bus_interface "{0}" $core]
 set_property -dict [list \
-  abstraction_type_vlnv {{xilinx.com:interface:axi4mm_rtl:1.0}} \
-  bus_type_vlnv {{xilinx.com:interface:axi4mm:1.0}} \
+  abstraction_type_vlnv xilinx.com:interface:aximm_rtl:1.0 \
+  bus_type_vlnv xilinx.com:interface:aximm:1.0 \
   interface_mode {1}] $if
 ipx::associate_bus_interfaces -busif "{0}" -clock clock -reset reset $core
 foreach {{bport port}} {2} {{
@@ -113,8 +115,10 @@ def make_vivado_script(jsonfile):
 		ifs = '\n'.join([map_interface(i['name'], i['kind']) for i in cd['interfaces']])
 		return __interface_script.format(cd['name'], cd['vendor'], cd['library'], cd['version'], cd['root'], cd['root'] + '/' + cd['name'] + '.v', ifs)
 
-def run_vivado(script):
+def run_vivado(jsonfile, script):
 	p = Popen(['vivado', '-mode', 'tcl', '-nolog', '-nojournal'], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        with open(os.path.join(os.path.dirname(jsonfile), 'package.tcl'), 'w') as tclf:
+            tclf.write(script)
 	output = p.communicate(input = script)[0]
 	print output.decode() 
 
@@ -124,5 +128,5 @@ def parse_args():
 	return parser.parse_args()
 
 args = parse_args()
-run_vivado(make_vivado_script(args.json))
+run_vivado(args.json, make_vivado_script(args.json))
 #print make_vivado_script(args.json)
