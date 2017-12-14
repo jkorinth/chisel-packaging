@@ -33,7 +33,7 @@ object CoreDefinition {
 
   def withActions(name: String, vendor: String, library: String, version: String, root: String,
                   postBuildActions: Seq[Option[Any] => Unit], interfaces: Seq[Interface] = Seq()): CoreDefinition =
-    new CoreDefinition(name, vendor, library, version, root, postBuildActions)
+    new CoreDefinition(name, vendor, library, version, root, postBuildActions, interfaces)
 
   def unapply(cd: CoreDefinition): Option[Tuple6[String, String, String, String, String, Seq[Interface]]] =
     Some((cd.name, cd.vendor, cd.library, cd.version, cd.root, cd.interfaces))
