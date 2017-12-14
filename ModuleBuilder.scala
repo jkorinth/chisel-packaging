@@ -27,7 +27,7 @@ abstract class ModuleBuilder(packagingDir: String = "packaging") {
     val fm = modules filter (m => args.length == 0 || args.map(_.toLowerCase).contains(m.core.name.toLowerCase))
     assert (fm.length > 0, "no matching cores found for: " + args.mkString(", "))
     fm foreach { m =>
-      Driver.execute(chiselArgs ++ Array("--target-dir", m.core.root), m.constr)
+      Driver.execute(chiselArgs ++ Array("--target-dir", m.core.root, "--top-name", m.core.name), m.constr)
       m.core.postBuildActions map (fn => fn.apply(m.config))
       val json = "%s/%s.json".format(m.core.root, m.core.name)
       m.core.write(json)
