@@ -1,6 +1,8 @@
 package chisel.packaging
 import  chisel3._
 import  scala.sys.process._
+import  java.nio.file._
+import  scala.language.postfixOps
 
 /** Module definition.
  *  @param config Optional, arbitrary configuration object, passed to post build actions.
@@ -22,16 +24,35 @@ abstract class ModuleBuilder(packagingDir: String = "packaging") {
   /** List of modules to build. */
   val modules: Seq[ModuleDef]
 
+  private def extractScript(name: String): Path = {
+    val p = Paths.get(java.io.File.createTempFile("chisel-packaging-", "", null).getAbsolutePath.toString).resolveSibling(name)
+    val ps = new java.io.FileOutputStream(p.toFile)
+    val in = Option(getClass().getClassLoader().getResourceAsStream(name))
+
+    if (in.isEmpty) throw new Exception(s"$name not found in resources!")
+    in map { is =>
+      Iterator continually (is.read) takeWhile (-1 !=) foreach (ps.write)
+      ps.flush()
+      ps.close()
+      p.toFile.deleteOnExit()
+      p.toFile.setExecutable(true)
+      Paths.get(p.toString)
+    } get
+  }
+
+
   def main(args: Array[String]) {
     assert ((modules map (_.core.name.toLowerCase)).toSet.size == modules.length, "module names must be unique")
     val fm = modules filter (m => args.length == 0 || args.map(_.toLowerCase).contains(m.core.name.toLowerCase))
     assert (fm.length > 0, "no matching cores found for: " + args.mkString(", "))
+    val (packaging, axi) = (extractScript("package.py"), extractScript("axi4.py"))
+    System.err.println(s"packaging script in: ${packaging.toString}")
     fm foreach { m =>
       Driver.execute(chiselArgs ++ Array("--target-dir", m.core.root, "--top-name", m.core.name), m.constr)
       m.core.postBuildActions map (fn => fn.apply(m.config))
       val json = "%s/%s.json".format(m.core.root, m.core.name)
       m.core.write(json)
-      "%s/package.py %s".format(packagingDir, json).!
+      s"${packaging.toString} %s".format(json).!
     }
   }
 }
