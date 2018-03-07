@@ -40,7 +40,7 @@ set core [ipx::current_core]
 set families [list]
 foreach p [get_parts] {{ lappend families [get_property ARCHITECTURE $p] }}
 set families [lsort -unique $families]
-foreach f $families {{ lappend fams [list $f Production] }}
+foreach f $families {{ lappend fams $f "Production" }}
 set_property supported_families $fams $core
 
 #set_property core_revision 1 $core
