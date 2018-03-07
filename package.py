@@ -37,7 +37,9 @@ ipx::create_core $vendor $library $name $version
 
 set core [ipx::current_core]
 
-set_property supported_families {{virtex7 Production qvirtex7 Production kintex7 Production kintex7l Production qkintex7 Production qkintex7l Production artix7 Production artix7l Production aartix7 Production qartix7 Production zynq Production qzynq Production azynq Production}} $core
+set parts [list]
+foreach p [get_parts] { lappend parts [list $p Production] }
+set_property supported_families $parts $core
 
 #set_property core_revision 1 $core
 set_property display_name $name $core
