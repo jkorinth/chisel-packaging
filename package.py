@@ -37,9 +37,11 @@ ipx::create_core $vendor $library $name $version
 
 set core [ipx::current_core]
 
-set parts [list]
-foreach p [get_parts] {{ lappend parts [list $p Production] }}
-set_property supported_families $parts $core
+set families [list]
+foreach p [get_parts] {{ lappend families [get_property ARCHITECTURE $p] }}
+set families [lsort -unique $families]
+foreach f $families {{ lappend fams [list $f Production] }}
+set_property supported_families $fams $core
 
 #set_property core_revision 1 $core
 set_property display_name $name $core
